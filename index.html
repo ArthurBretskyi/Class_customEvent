@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Custom Event</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      .products-list-container {
+        display: flex;
+        flex-direction: column;
+        row-gap: 20px;
+        width: 100%;
+        height: 100%;
+        align-items: center;
+        padding: 50px;
+      }
+      .product-container {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 5px;
+        border: 1px solid black;
+        width: 400px;
+        height: 40px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="products-list-container">
+      <h1>classProduct-classCart-customEvent</h1>
+
+      <p>
+        Описати клас Product, що представляє товар онлайн магазину (з можливістю
+        видалення). Потім описати клас корзина "Cart", у якому є список
+        продуктів. При видаленні продукту повинна змінюватись загальна вартість
+        у корзині.
+      </p>
+    </div>
+    <script>
+      class Product {
+        constructor({ title, price }) {
+          this.title = title;
+          this.price = price;
+        }
+
+        onDelete() {
+          //власна подія
+          const deletedProductEvent = new CustomEvent("deleteProduct", {
+            detail: {
+              priceOfDeletedProduct: this.price,
+            },
+          });
+          // відправляю подію
+          this.productContainer.dispatchEvent(deletedProductEvent);
+          this.productContainer.remove();
+        }
+
+        render(containerSelector) {
+          const productContainer = document.createElement("div");
+          productContainer.className = "product-container";
+
+          const productTitle = document.createElement("h5");
+          productTitle.innerText = this.title;
+          productContainer.append(productTitle);
+
+          const productPrice = document.createElement("span");
+          productPrice.innerText = `price: ${this.price}`;
+          productContainer.append(productPrice);
+
+          const productButton = document.createElement("button");
+          productButton.innerText = "Delete from Cart";
+          productButton.onclick = this.onDelete.bind(this);
+          productContainer.append(productButton);
+
+          //щоб постійно не писати this.productContainer, зберігаю його в this
+          this.productContainer = productContainer;
+
+          if (containerSelector) {
+            document.querySelector(containerSelector).append(productContainer);
+          }
+          return productContainer;
+        }
+      }
+      //====================================
+      class Cart {
+        constructor(productList) {
+          this.productList = productList;
+        }
+        onDeleteObj(event) {
+          let priceToDelete = event.detail.priceOfDeletedProduct;
+          this.totalPrice -= priceToDelete;
+          this.totalPriceSpan.innerText = this.totalPrice;
+        }
+        render(containerSelector) {
+          const productObjContainer = document.createElement("div");
+          productObjContainer.className = "product-obj-cnt";
+          for (const product of this.productList) {
+            const productObj = new Product(product);
+            productObjContainer.append(productObj.render());
+            productObj.productContainer.addEventListener(
+              "deleteProduct",
+              this.onDeleteObj.bind(this)
+            );
+          }
+
+          const totalSumCnt = document.createElement("div");
+          totalSumCnt.innerText = "Total: ";
+          const totalSumSpan = document.createElement("span");
+
+          this.totalPrice = this.productList.reduce(
+            (prevSum, prod) => (prevSum += prod.price),
+            0
+          );
+          totalSumSpan.innerText = this.totalPrice;
+
+          //зберігаю totalSumSpan, щоб в подальшому звертатись до значення totalPrice
+          this.totalPriceSpan = totalSumSpan;
+
+          totalSumCnt.append(totalSumSpan);
+
+          productObjContainer.append(totalSumCnt);
+          if (containerSelector) {
+            document
+              .querySelector(containerSelector)
+              .append(productObjContainer);
+          }
+        }
+      }
+
+      let productList = [
+        {
+          title: "Tea",
+          price: 60,
+        },
+        {
+          title: "Coffee",
+          price: 120,
+        },
+        {
+          title: "Beer",
+          price: 100,
+        },
+        {
+          title: "Meat",
+          price: 160,
+        },
+      ];
+
+      const cartOne = new Cart(productList);
+      cartOne.render(".products-list-container");
+    </script>
+  </body>
+</html>
